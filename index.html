@@ -184,6 +184,9 @@
   #card-back{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:1.5cqh;background:linear-gradient(160deg,#141a2c 0%,#1d1636 60%,#0e0b18 100%)}
   #back-sigil{position:absolute;width:52cqh;height:52cqh;filter:invert(1);opacity:.06;pointer-events:none}
+  #back-new{position:absolute;top:2.8cqh;left:0;right:0;text-align:center;font-size:1.75cqh;
+    letter-spacing:.5em;text-indent:.5em;color:var(--gold);text-transform:uppercase;
+    text-shadow:0 0 14px rgba(255,215,0,.65)}
   #back-set{font-size:1.9cqh;letter-spacing:.42em;color:var(--ink-dim);text-transform:uppercase}
   #back-num{font-family:var(--font-oracle);font-style:italic;font-size:4.2cqh;color:#fff;
     text-shadow:0 0 18px color-mix(in srgb,var(--sent,#fff) 60%,transparent)}
@@ -494,6 +497,7 @@
             </div>
             <div class="card-face" id="card-back">
               <img id="back-sigil" alt="">
+              <div id="back-new">✦ NEW ✦</div>
               <div id="back-set">Sacred Geometry · Set I</div>
               <div id="back-num"></div>
               <div id="back-rarity"></div>
@@ -1671,11 +1675,12 @@ function doReveal(align, rarity) {
   $('card-persona').textContent = p.name + '  ·  GetAnswers.App';
   // paint card (back)
   $('back-sigil').src = SIGILS[sigIdx];
+  $('back-new').style.display = sigNew ? '' : 'none';
   $('back-num').textContent = 'Sigil № ' + (sigIdx + 1) + ' of ' + SIGILS.length +
-    (sigNew ? '  ·  NEW ✦' : '  ·  ×' + S.sigCount[sigIdx]);
+    (sigNew ? '' : '  ·  ×' + S.sigCount[sigIdx]);
   $('back-rarity').textContent = RARITY_SHORT[rarity] + ' · ' + p.name;
   const owned = Object.keys(S.sigils).length;
-  $('back-progress').innerHTML = SET_NAME + ' — <b>' + owned + '</b>/' + SIGILS.length + ' collected' +
+  $('back-progress').innerHTML = '<b>' + owned + '</b>/' + SIGILS.length + ' collected' +
     (owned >= SIGILS.length ? ' ✦ COMPLETE' : '');
   $('second-opinion-wrap').style.display = 'none';
   $('btn-second').style.opacity = 1; $('btn-second').style.pointerEvents = 'auto';
