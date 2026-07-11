@@ -684,6 +684,8 @@ const LIGHTWELL={"v":1,"cats":["Live Inspired","Thank You","Wish","Be Happy","Be
    ============================================================ */
 (() => {
 'use strict';
+const BUILD = 21;
+try { console.log('✦ Get Answers — The Oracle · build ' + BUILD); } catch (e) {}
 
 /* ---------------- YouTube Playables shim ---------------- */
 const YT = (() => {
@@ -1059,14 +1061,12 @@ const FX = (() => {
     const R = orb.r * H * breathe;
     const X = orb.x * W + (still ? 0 : Math.sin(t * 0.9) * 2 * DPR);
     const Y = orb.y * H + (still ? 0 : Math.cos(t * 0.7) * 2.4 * DPR);
-    // aura — only the LIGHT breathes; crystal and ring never move
-    const breathGlow = ritual.active && !ritual.holding ? 0.5 + 0.5 * Math.sin(t * 0.85) : 0;
-    const auraR = R * (3.1 + breathGlow * 0.5);
-    let g = cx.createRadialGradient(X, Y, R * 0.2, X, Y, auraR);
+    // aura — locked. the crystal and its glow NEVER pulse
+    let g = cx.createRadialGradient(X, Y, R * 0.2, X, Y, R * 3.1);
     g.addColorStop(0, orb.hue + 'd0'); g.addColorStop(0.4, orb.hue2 + '58');
     g.addColorStop(0.72, orb.hue2 + '20'); g.addColorStop(1, 'transparent');
-    cx.globalAlpha = Math.min(1, 0.55 * orb.glow + breathGlow * 0.16 + (ritual.active ? ritual.charge * 0.4 : 0));
-    cx.fillStyle = g; cx.beginPath(); cx.arc(X, Y, auraR, 0, 7); cx.fill();
+    cx.globalAlpha = 0.55 * orb.glow + (ritual.active ? ritual.charge * 0.4 : 0);
+    cx.fillStyle = g; cx.beginPath(); cx.arc(X, Y, R * 3.1, 0, 7); cx.fill();
     cx.globalAlpha = 1;
     // ---- crystal ball ----
     if (orbImg.complete && orbImg.naturalWidth) {
@@ -1177,8 +1177,11 @@ const FX = (() => {
     cx.restore();
     cx.globalAlpha = 1;
 
-    // ring centers on the full artwork — glass plus golden base — fixed size, never moves
-    if (ritual.active) drawRing(X, Y + R * 0.35, R * 1.78, dt);
+    // the ring LINE breathes gently while it waits — the crystal never moves
+    if (ritual.active) {
+      const ringBreath = ritual.holding ? 1 : 1 + Math.sin(t * 0.85) * 0.025;
+      drawRing(X, Y + R * 0.35, R * 1.78 * ringBreath, dt);
+    }
   }
   function drawRing(X, Y, RR, dt) {
     // track
