@@ -221,6 +221,27 @@
   .codex-cell.r2{border-color:rgba(147,112,219,.65)}
   .codex-cell.r3{border-color:rgba(0,229,255,.6);box-shadow:0 0 1.2cqh rgba(0,229,255,.22)}
   .codex-cell.r4{border-color:rgba(255,215,0,.75);box-shadow:0 0 1.4cqh rgba(255,215,0,.3)}
+  .codex-cell{cursor:pointer}
+  .codex-cell .ct{position:absolute;right:.6cqh;bottom:.4cqh;font-size:1.3cqh;color:var(--gold);font-weight:700}
+  .codex-cell .aw{position:absolute;right:.6cqh;top:.3cqh;font-size:1.5cqh;color:var(--gold)}
+  .codex-cell.ready{border-color:var(--gold);animation:readypulse 1.6s ease-in-out infinite}
+  @keyframes readypulse{0%,100%{box-shadow:0 0 .6cqh rgba(255,215,0,.25)}50%{box-shadow:0 0 2cqh rgba(255,215,0,.6)}}
+  .codex-cell.awakened{border-color:var(--gold);box-shadow:0 0 1.6cqh rgba(255,215,0,.5)}
+  .codex-cell.awakened img{opacity:.95;filter:invert(1) drop-shadow(0 0 1cqh #FFD700)}
+  #codex-lore{margin-top:1.6cqh;min-height:11cqh;text-align:center;width:100%}
+  #codex-lore .cl-name{font-size:1.9cqh;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  #codex-lore .cl-line{font-family:var(--font-oracle);font-style:italic;font-size:1.85cqh;color:var(--ref);margin-top:.6cqh;line-height:1.5}
+  #codex-lore .cl-meta{font-size:1.55cqh;color:var(--ink-dim);margin-top:.6cqh}
+  #codex-lore .btn-secondary{margin:1.1cqh auto 0;max-width:72%}
+  .realm.blessed{border-color:rgba(255,215,0,.45)}
+  .realm.heard{animation:heardpulse .9s ease}
+  @keyframes heardpulse{0%{box-shadow:0 0 0 rgba(255,215,0,0)}40%{box-shadow:0 0 3cqh rgba(255,215,0,.65)}100%{box-shadow:0 0 0 rgba(255,215,0,0)}}
+  @media (prefers-reduced-motion: reduce){
+    #tap-begin,.btn-primary,.btn-primary::after{animation:none}
+    #card.holo-legendary #card-holo,.lc-holo,.lc-rays{animation:none}
+    #card-sparkles i,.lc-sparkles i{animation:none;opacity:.3}
+    #light-scene.bloom,.codex-cell.ready{animation:none}
+  }
 
   /* ---------- shop / locks / egg / toast ---------- */
   .persona-card.locked{opacity:.8}
@@ -244,9 +265,9 @@
   .es-cat{font-size:7cqh;line-height:1}
   .es-title{font-family:var(--font-oracle);font-style:italic;font-size:2.7cqh;color:var(--ink)}
   .es-sub{font-size:1.8cqh;color:var(--ink-dim);line-height:1.6}
-  #sound-sheet,#share-sheet{position:absolute;inset:0;z-index:10;display:none;place-items:center;
+  #sound-sheet,#share-sheet,#repair-sheet{position:absolute;inset:0;z-index:10;display:none;place-items:center;
     background:rgba(4,6,10,.9);backdrop-filter:blur(10px)}
-  #sound-sheet.show,#share-sheet.show{display:grid}
+  #sound-sheet.show,#share-sheet.show,#repair-sheet.show{display:grid}
   .snd-chip{padding:1.7cqh 3cqw;border-radius:1.6cqh;border:1px solid rgba(240,248,255,.22);
     background:rgba(240,248,255,.05);color:var(--ink);font-size:1.9cqh;cursor:pointer;transition:border-color .2s,color .2s,box-shadow .2s;
     position:relative;overflow:hidden;touch-action:none;display:flex;align-items:center;justify-content:center}
@@ -488,6 +509,7 @@
     <section class="screen" id="s-codex">
       <div class="h-screen">The Codex</div>
       <div id="codex-grid"></div>
+      <div id="codex-lore"></div>
       <div id="codex-stats"></div>
       <button class="btn-primary" id="codex-close" style="margin-top:auto;margin-bottom:4cqh">RETURN</button>
     </section>
@@ -558,6 +580,13 @@
       <div class="btn-secondary" id="shs-x">𝕏 Share to X</div>
       <div class="btn-secondary" id="shs-tg">✈ Telegram</div>
       <div class="btn-secondary gold" id="shs-close">Close</div>
+    </div></div>
+    <div id="repair-sheet"><div class="es-inner">
+      <div class="es-cat">🔥</div>
+      <div class="es-title" id="repair-title">Your streak flickered out.</div>
+      <div class="es-sub">The flame remembers. One breath can relight it.</div>
+      <div class="btn-secondary gold" id="repair-watch">📺 Relight my streak</div>
+      <div class="btn-secondary" id="repair-skip">Let it go</div>
     </div></div>
     <div id="sound-sheet"><div class="es-inner">
       <div class="es-cat">🎧</div>
@@ -884,6 +913,7 @@ const SFX = (() => {
 /* ---------------- Canvas FX engine ---------------- */
 const FX = (() => {
   const cv = document.getElementById('fx'), cx = cv.getContext('2d');
+  const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   // real crystal-ball artwork for the day's chakra (falls back to procedural sphere)
   const orbImg = new Image();
   try { if (typeof CRYSTAL_IMGS !== 'undefined') orbImg.src = CRYSTAL_IMGS[new Date().getDay()]; } catch (e) {}
@@ -912,7 +942,7 @@ const FX = (() => {
   }
   function initStars() {
     stars = [];
-    for (let i = 0; i < 130; i++) stars.push({
+    for (let i = 0; i < (REDUCED ? 70 : 130); i++) stars.push({
       x: Math.random(), y: Math.random(), z: 0.3 + Math.random() * 0.7,
       p: Math.random() * Math.PI * 2, s: 0.6 + Math.random() * 1.7
     });
@@ -940,6 +970,7 @@ const FX = (() => {
     ritual.goldA = Math.random() * Math.PI * 2; ritual.angle = ritual.goldA + Math.PI; // start opposite gold
   }
   function burst(n, colors, cxp = orb.x, cyp = orb.y, spd = 1) {
+    if (REDUCED) n = Math.ceil(n / 4);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, v = (0.08 + Math.random() * 0.5) * spd;
       parts.push({ x: cxp * W, y: cyp * H, vx: Math.cos(a) * v * W * 0.004, vy: Math.sin(a) * v * H * 0.004,
@@ -948,6 +979,7 @@ const FX = (() => {
     }
   }
   function vortex(n, colors) {
+    if (REDUCED) n = Math.ceil(n / 4);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, d = 0.5 + Math.random() * 0.25;
       parts.push({ x: orb.x * W + Math.cos(a) * d * W, y: orb.y * H + Math.sin(a) * d * H,
@@ -968,7 +1000,7 @@ const FX = (() => {
     cx.globalAlpha = 1;
     // occasional shooting star on calm screens
     shootTimer -= dt;
-    if (shootTimer < 0 && (mode === 'title' || mode === 'question')) {
+    if (shootTimer < 0 && !REDUCED && (mode === 'title' || mode === 'question')) {
       shootTimer = 5 + Math.random() * 9;
       const sx = Math.random() * 0.8 + 0.1, sy = Math.random() * 0.3;
       for (let i = 0; i < 14; i++) parts.push({ x: sx * W + i * 4 * DPR, y: sy * H + i * 2.4 * DPR,
@@ -1232,15 +1264,42 @@ const RARITY_NAMES = { 1: 'Common Reading', 2: 'Rare Reading', 3: '◆ EPIC READ
 const RARITY_COLORS = { 2: '#9370DB', 3: '#00E5FF', 4: '#FFD700' };
 const RARITY_SHORT = { 1: 'Common', 2: 'Rare', 3: 'Epic', 4: 'Legendary' };
 const SET_NAME = 'Sacred Geometry · Set I';
+const SIGIL_LORE = [
+  ['The First Breath', 'Every beginning remembers being impossible.'],
+  ['The Twin Gate', 'Two paths, one walker. The choosing is the crossing.'],
+  ['The Woven Star', 'Fates can cross without tangling.'],
+  ['The Still Point', 'The center never argues with the storm.'],
+  ['The Bloom of Number', 'What multiplies was once one seed.'],
+  ['The Watcher’s Eye', 'Seen from far enough, every knot is a pattern.'],
+  ['The Silver Thread', 'What is truly yours cannot be dropped.'],
+  ['The Turning Wheel', 'Endings are only corners, rounded.'],
+  ['The Ninefold Seal', 'Nine breaths, nine doors, one key.'],
+  ['The Anchor of Light', 'Hope holds better than iron.'],
+  ['The Open Palm', 'Release is also an offering.'],
+  ['The Deep Well', 'Go inward. The water is older than thirst.'],
+  ['The Crowned Circle', 'You were whole before you were told otherwise.'],
+  ['The Ladder of Dawn', 'Climb gently. The sun does.'],
+  ['The Mirror Gate', 'What you seek is studying you back.'],
+  ['The Ember Sigil', 'Small fires outlive great storms.'],
+  ['The Compass Rose', 'Lost is a place the found have all visited.'],
+  ['The Threshold', 'Courage is one step wide.'],
+  ['The Chord of Spheres', 'The worlds agree more than they admit.'],
+  ['The Quiet Crown', 'Mastery whispers.'],
+  ['The Root of Heaven', 'As below, so above.'],
+  ['The Weaver’s Knot', 'Nothing given in love is ever wasted.'],
+  ['The Solar Seed', 'Tomorrow is already germinating.'],
+  ['The Veiled Star', 'Some lights insist on being earned.'],
+  ['The Completion', 'The circle was never broken, only wide.']
+];
 // Chakra of the day — Sun→Sat mirrors the root→crown ladder
 const CHAKRA = [
-  { c: '#FF3B30', n: 'Root',         day: 'Sunday' },
-  { c: '#FF9500', n: 'Sacral',       day: 'Monday' },
-  { c: '#FFD60A', n: 'Solar Plexus', day: 'Tuesday' },
-  { c: '#34C759', n: 'Heart',        day: 'Wednesday' },
-  { c: '#1E90FF', n: 'Throat',       day: 'Thursday' },
-  { c: '#4B0082', n: 'Third Eye',    day: 'Friday' },
-  { c: '#8E44AD', n: 'Crown',        day: 'Saturday' }
+  { c: '#FF3B30', n: 'Root',         day: 'Sunday',    r: 'MONEY' },
+  { c: '#FF9500', n: 'Sacral',       day: 'Monday',    r: 'CHAOS' },
+  { c: '#FFD60A', n: 'Solar Plexus', day: 'Tuesday',   r: 'CAREER' },
+  { c: '#34C759', n: 'Heart',        day: 'Wednesday', r: 'LOVE' },
+  { c: '#1E90FF', n: 'Throat',       day: 'Thursday',  r: 'LIFE' },
+  { c: '#4B0082', n: 'Third Eye',    day: 'Friday',    r: 'CHAOS' },
+  { c: '#8E44AD', n: 'Crown',        day: 'Saturday',  r: 'LIFE' }
 ];
 function chakraToday() { return CHAKRA[new Date().getDay()]; }
 // light tint of a hex color (mixed toward alice-white) — returns hex for canvas alpha-suffix compat
@@ -1256,6 +1315,7 @@ let S = {
   streak: { n: 0, last: '', best: 0 },
   readings: 0, legendaries: 0, sigils: {}, bags: {}, legBags: {},
   unlocked: {}, catFound: false, catSummons: 0,
+  chain: { n: 0 }, sigCount: {}, awakened: {},
   lw: { draws: 0, affs: 0, shares: 0 },
   sound: { freq: 0, wave: 0, rain: false, vols: { tone432: .7, tone528: .7, w783: .7, w999: .7, rain: .7 } }
 };
@@ -1360,7 +1420,7 @@ function checkMilestones() {
 function openEgg() { $('egg-sheet').classList.add('show'); SFX.ensure(); SFX.meow(); }
 
 /* ---------------- Card tilt, glare & flip ---------------- */
-let flipped = false;
+let flipped = false, onFirstFlip = null, firstRun = false, pendingRepair = 0;
 function setFlip(on, instant) {
   flipped = on;
   const inner = $('card-inner');
@@ -1388,6 +1448,7 @@ function setFlip(on, instant) {
   }
   function doFlip() {
     setFlip(!flipped); SFX.ensure(); SFX.flip();
+    if (onFirstFlip) { const f = onFirstFlip; onFirstFlip = null; setTimeout(f, 300); }
     if (navigator.vibrate) try { navigator.vibrate(flipped ? [10, 26, 14] : 14); } catch (e) {}
   }
   scene.addEventListener('pointermove', e => {
@@ -1408,14 +1469,18 @@ function buildRealms() {
   const wrap = $('realms'); wrap.innerHTML = '';
   REALMS.forEach(([svg, label, key]) => {
     const el = document.createElement('div');
-    el.className = 'realm' + (S.realm === key ? ' on' : '');
-    el.innerHTML = svg + '<span>' + label + '</span>';
-    el.onclick = () => { SFX.ensure(); SFX.tap(); S.realm = key;
+    const blessed = key === chakraToday().r;
+    el.className = 'realm' + (S.realm === key ? ' on' : '') + (blessed ? ' blessed' : '');
+    el.innerHTML = svg + '<span>' + label + (blessed ? ' ✨' : '') + '</span>';
+    el.onclick = () => { SFX.ensure(); SFX.tap(); S.realm = key; realmTouched = true;
       document.querySelectorAll('.realm').forEach(r => r.classList.remove('on')); el.classList.add('on'); };
+    REALM_ELS[key] = el;
     wrap.appendChild(el);
   });
 }
-function newPrompt() { $('q-prompt').textContent = pick(ORACLE_DATA.headers); }
+const REALM_ELS = {};
+let realmTouched = false;
+function newPrompt() { realmTouched = false; $('q-prompt').textContent = pick(ORACLE_DATA.headers); }
 function updateStreakUI() {
   $('streak-num').textContent = S.streak.n;
   $('title-streak').textContent = S.streak.n > 1 ? `🔥 ${S.streak.n}-day cosmic streak` : '';
@@ -1425,8 +1490,13 @@ function updateStreakUI() {
 function startRitual() {
   $('whisper').blur(); busy = false;
   show('ritual'); FX.startRitual();
+  // perfect chains raise the stakes: faster ring, tighter gold
+  const cn = Math.min(4, S.chain.n);
+  FX.ritual.speed = 2.9 + cn * 0.35;
+  FX.ritual.goldW = Math.max(0.46, 0.62 - cn * 0.04);
   $('alignment-read').style.opacity = 0;
-  $('ritual-instruction').innerHTML = '<b>HOLD</b> THE ORB TO CHARGE<br>RELEASE IN THE <b>GOLD</b>';
+  $('ritual-instruction').innerHTML = '<b>HOLD</b> THE ORB TO CHARGE<br>RELEASE IN THE <b>GOLD</b>' +
+    (S.chain.n > 0 ? `<br><span style="color:var(--gold)">✦ chain ×${S.chain.n}${S.chain.n >= 2 ? ' — one more perfect = EPIC+' : ''}</span>` : '');
 }
 const ritualDown = e => {
   if (currentScreen !== 'ritual' || FX.ritual.holding || busy) return;
@@ -1442,8 +1512,11 @@ const ritualUp = e => {
   let blessed = false;
   if (!dailyBlessed && S.streak.last !== todayStr()) { align = Math.min(100, align + 15); blessed = true; dailyBlessed = true; }
   SFX.release(align);
+  if (align >= 100) S.chain.n++; else S.chain.n = 0;
   const read = $('alignment-read');
-  read.textContent = align >= 100 ? '✦ PERFECT ALIGNMENT ✦' : align >= 70 ? 'ALIGNED · ' + align : 'FAINT SIGNAL · ' + align;
+  read.textContent = align >= 100
+    ? '✦ PERFECT ALIGNMENT ✦' + (S.chain.n > 1 ? ' ×' + S.chain.n : '') + (S.chain.n >= 3 ? ' — EPIC+ GUARANTEED' : '')
+    : align >= 70 ? 'ALIGNED · ' + align : 'FAINT SIGNAL · ' + align;
   read.style.color = align >= 100 ? '#FFD700' : align >= 70 ? '#E6E6FA' : '#8fa3b8';
   if (blessed) read.textContent += '  (+15 daily blessing)';
   read.style.opacity = 1;
@@ -1458,18 +1531,23 @@ document.addEventListener('pointercancel', ritualUp, { passive: false });
 
 /* ---------------- Contemplation → reveal ---------------- */
 function rollRarity(align) {
-  const pLeg = Math.min(0.25, 0.03 + (align / 100) * 0.12 + Math.min(S.streak.n, 10) * 0.004);
+  const awakened = Object.keys(S.awakened).length;           // each awakened sigil: +0.4% legendary
+  const dayBlessed = S.realm === chakraToday().r ? 0.05 : 0; // the day's chakra blesses its realm
+  const chainBonus = Math.min(4, S.chain.n) * 0.01;
+  const pLeg = Math.min(0.30, 0.03 + (align / 100) * 0.12 + Math.min(S.streak.n, 10) * 0.004
+    + awakened * 0.004 + dayBlessed + chainBonus);
   const pEpic = 0.10 + (align / 100) * 0.10;
   const pRare = 0.24;
   const r = Math.random();
-  if (r < pLeg) return 4;
-  if (r < pLeg + pEpic) return 3;
-  if (r < pLeg + pEpic + pRare) return 2;
-  return 1;
+  let rarity = r < pLeg ? 4 : r < pLeg + pEpic ? 3 : r < pLeg + pEpic + pRare ? 2 : 1;
+  if (S.chain.n >= 3 && rarity < 3) rarity = 3;              // three perfects in a row guarantee Epic+
+  return rarity;
 }
 function contemplate(align) {
   show('contemplate');
   SFX.whoosh();
+  let rarity = rollRarity(align);
+  if (firstRun) rarity = Math.max(rarity, 3); // first pull is always a banger
   const cm = $('cm-text');
   const msgs = [pick(ORACLE_DATA.contemplations), pick(ORACLE_DATA.contemplations), pick(ORACLE_DATA.contemplations)];
   let i = 0; cm.textContent = msgs[0]; cm.style.opacity = 1;
@@ -1478,25 +1556,44 @@ function contemplate(align) {
   const iv = setInterval(() => {
     i++; if (i < 3) { cm.style.opacity = 0; setTimeout(() => { cm.textContent = msgs[i]; cm.style.opacity = 1; }, 240); FX.vortex(50, [p.glow, p.color]); }
   }, 1230);
-  setTimeout(() => { clearInterval(iv); doReveal(align); }, 3690); // the sacred 3.69s
+  // the legendary tell: gold gathers early, hearts race
+  if (rarity === 4) {
+    setTimeout(() => { FX.vortex(70, ['#FFD700', '#FFA500', '#FFF3B8']); }, 1000);
+    setTimeout(() => { FX.burst(30, ['#FFD700', '#FFF3B8'], .5, .58, .7); }, 2200);
+  }
+  setTimeout(() => { clearInterval(iv); doReveal(align, rarity); }, 3690); // the sacred 3.69s
 }
-function doReveal(align) {
-  const rarity = rollRarity(align);
+function doReveal(align, rarity) {
+  if (rarity === undefined) rarity = rollRarity(align);
+  if (S.chain.n >= 3) S.chain.n = 0; // the chain spends itself on the guarantee
   const p = persona();
   let ans, sent, color;
   if (rarity === 4) { ans = drawFromBag(p.id, true); sent = 'Legendary'; color = RARITY_COLORS[4]; S.legendaries++; }
   else {
     ans = drawFromBag(p.id); sent = ans.s;
+    if (firstRun) { const affs = p.deck.filter(c => c.s === 'Affirmative'); if (affs.length) { ans = pick(affs); sent = ans.s; } }
     color = rarity === 1 ? (SENT_COLORS[ans.s] || '#D3D3D3') : RARITY_COLORS[rarity];
   }
-  // sigil: prefer unowned
+  firstRun = false;
+  // sigil: prefer unowned; duplicates feed the awakening path
   const unowned = SIGILS.map((_, i) => i).filter(i => !S.sigils[i]);
-  const sigIdx = (unowned.length && Math.random() < 0.75) ? pick(unowned) : (Math.random() * SIGILS.length) | 0;
+  let sigIdx;
+  if (unowned.length && Math.random() < 0.7) sigIdx = pick(unowned);
+  else {
+    const owned = SIGILS.map((_, i) => i).filter(i => S.sigils[i]);
+    const growable = owned.filter(i => !S.awakened[i]);
+    sigIdx = pick(growable.length ? growable : (owned.length ? owned : SIGILS.map((_, i) => i)));
+  }
+  const sigNew = !S.sigils[sigIdx];
   S.sigils[sigIdx] = Math.max(S.sigils[sigIdx] || 0, rarity);
+  S.sigCount[sigIdx] = (S.sigCount[sigIdx] || 0) + 1;
+  if (!sigNew && S.sigCount[sigIdx] >= 3 && !S.awakened[sigIdx])
+    setTimeout(() => showToast('✨ Sigil № ' + (sigIdx + 1) + ' is ready to awaken — visit the Codex'), 2800);
   // streak
   const td = todayStr();
   if (S.streak.last !== td) {
-    S.streak.n = (S.streak.last === yesterStr()) ? S.streak.n + 1 : 1;
+    if (S.streak.last === yesterStr()) S.streak.n++;
+    else { if (S.streak.n >= 3) pendingRepair = S.streak.n; S.streak.n = 1; }
     S.streak.last = td; S.streak.best = Math.max(S.streak.best, S.streak.n);
   }
   S.readings++; updateStreakUI(); checkMilestones(); saveState(); YT.sendScore(S.readings);
@@ -1524,7 +1621,8 @@ function doReveal(align) {
   $('card-persona').textContent = p.name + '  ·  GetAnswers.App';
   // paint card (back)
   $('back-sigil').src = SIGILS[sigIdx];
-  $('back-num').textContent = 'Sigil № ' + (sigIdx + 1) + ' of ' + SIGILS.length;
+  $('back-num').textContent = 'Sigil № ' + (sigIdx + 1) + ' of ' + SIGILS.length +
+    (sigNew ? '  ·  NEW ✦' : '  ·  ×' + S.sigCount[sigIdx]);
   $('back-rarity').textContent = RARITY_SHORT[rarity] + ' · ' + p.name;
   const owned = Object.keys(S.sigils).length;
   $('back-progress').innerHTML = SET_NAME + ' — <b>' + owned + '</b>/' + SIGILS.length + ' collected' +
@@ -1534,13 +1632,37 @@ function doReveal(align) {
 
   FX.flashPulse(); $('flash').style.transition = 'none'; $('flash').style.opacity = .9;
   requestAnimationFrame(() => { $('flash').style.transition = 'opacity .8s'; $('flash').style.opacity = 0; });
+  // the card arrives face-down — the player detonates the reveal themselves
+  setFlip(true, true);
+  const realBackRarity = $('back-rarity').textContent;
+  $('back-rarity').textContent = '✦ tap to reveal ✦';
+  onFirstFlip = () => {
+    $('back-rarity').textContent = realBackRarity;
+    if (rarity === 4) FX.setCardEmit(() => document.getElementById('card-scene').getBoundingClientRect());
+    SFX.reveal(rarity);
+    FX.burst(rarity >= 3 ? 240 : rarity === 2 ? 120 : 60,
+      rarity === 4 ? ['#FFD700', '#FFA500', '#fff'] : [color, '#F0F8FF', p.glow], .5, .42, rarity >= 3 ? 1.6 : 1);
+    if (navigator.vibrate && rarity >= 3) try { navigator.vibrate(rarity === 4 ? [40, 60, 40, 60, 120] : [30, 40, 50]); } catch (e) {}
+    if (pendingRepair) { const n = pendingRepair; pendingRepair = 0; setTimeout(() => offerRepair(n), 1600); }
+  };
   show('reveal');
-  if (rarity === 4) FX.setCardEmit(() => document.getElementById('card-scene').getBoundingClientRect());
-  SFX.reveal(rarity);
-  FX.burst(rarity >= 3 ? 240 : rarity === 2 ? 120 : 60,
-    rarity === 4 ? ['#FFD700', '#FFA500', '#fff'] : [color, '#F0F8FF', p.glow], .5, .42, rarity >= 3 ? 1.6 : 1);
-  if (navigator.vibrate && rarity >= 3) try { navigator.vibrate(rarity === 4 ? [40, 60, 40, 60, 120] : [30, 40, 50]); } catch (e) {}
+  SFX.tap();
   busy = false;
+}
+
+/* ---------------- Streak repair (mercy, monetized) ---------------- */
+function offerRepair(n) {
+  $('repair-title').textContent = 'Your ' + n + '-day streak flickered out.';
+  $('repair-sheet').classList.add('show');
+  $('repair-watch').onclick = async () => {
+    $('repair-sheet').classList.remove('show');
+    const ok = await YT.rewarded('streak_repair', () => fakeInterlude(1500, '📺 Rewarded Ad', 'on YouTube, a rewarded ad plays here — then the flame relights'));
+    if (!ok) return;
+    S.streak.n = n + 1; S.streak.best = Math.max(S.streak.best, S.streak.n);
+    saveState(); updateStreakUI();
+    showToast('🔥 Relit — ' + S.streak.n + ' days and burning');
+  };
+  $('repair-skip').onclick = () => { SFX.tap(); $('repair-sheet').classList.remove('show'); };
 }
 
 /* ---------------- Interlude (fake ad in standalone) ---------------- */
@@ -1639,19 +1761,53 @@ function wrapLines(x, text, maxW) {
 /* ---------------- Codex ---------------- */
 function openCodex() {
   prevScreen = currentScreen;
+  buildCodex();
+  show('codex');
+}
+function buildCodex() {
   const grid = $('codex-grid'); grid.innerHTML = '';
   SIGILS.forEach((src, i) => {
     const cell = document.createElement('div');
-    const r = S.sigils[i] || 0;
-    cell.className = 'codex-cell' + (r ? ' owned r' + r : '');
-    cell.innerHTML = `<img src="${src}" alt="">`;
+    const r = S.sigils[i] || 0, ct = S.sigCount[i] || 0;
+    cell.className = 'codex-cell' + (r ? ' owned r' + r : '') +
+      (S.awakened[i] ? ' awakened' : (r && ct >= 3 ? ' ready' : ''));
+    cell.innerHTML = `<img src="${src}" alt="">` +
+      (S.awakened[i] ? '<b class="aw">✦</b>' : (ct > 1 ? `<b class="ct">×${ct}</b>` : ''));
+    cell.onclick = () => { SFX.ensure(); SFX.tap(); codexSelect(i); };
     grid.appendChild(cell);
   });
-  const owned = Object.keys(S.sigils).length;
+  const owned = Object.keys(S.sigils).length, aw = Object.keys(S.awakened).length;
+  $('codex-lore').innerHTML = '<div class="cl-line">tap a sigil to read its seal</div>';
   $('codex-stats').innerHTML =
-    `<b>${owned}</b> / ${SIGILS.length} sigils collected · <b>${S.readings}</b> readings · <b>${S.legendaries}</b> legendary<br>` +
-    `🔥 streak <b>${S.streak.n}</b> (best ${S.streak.best})`;
-  show('codex');
+    `<b>${owned}</b> / ${SIGILS.length} sigils · <b>${aw}</b> awakened (+${(aw * 0.4).toFixed(1)}% legendary) · <b>${S.readings}</b> readings<br>` +
+    `🔥 streak <b>${S.streak.n}</b> (best ${S.streak.best}) · <b>${S.legendaries}</b> legendary`;
+}
+function codexSelect(i) {
+  const lore = SIGIL_LORE[i] || ['Seal ' + (i + 1), 'Its meaning is still forming.'];
+  const el = $('codex-lore');
+  if (!S.sigils[i]) {
+    el.innerHTML = '<div class="cl-name">Unfound</div><div class="cl-line">The well keeps this one veiled. Keep asking.</div>';
+    return;
+  }
+  const ct = S.sigCount[i] || 1;
+  const meta = S.awakened[i]
+    ? '✦ awakened — its light feeds your legendary odds'
+    : (ct >= 3 ? '' : `copies ×${ct} · ${3 - ct} more to awaken`);
+  el.innerHTML = `<div class="cl-name">${lore[0]}</div><div class="cl-line">${lore[1]}</div>` +
+    (meta ? `<div class="cl-meta">${meta}</div>` : '') +
+    (!S.awakened[i] && ct >= 3 ? `<div class="btn-secondary gold" id="awaken-btn">✦ Awaken — ${ct} copies gathered</div>` : '');
+  const btn = $('awaken-btn');
+  if (btn) btn.onclick = () => awakenSigil(i);
+}
+function awakenSigil(i) {
+  if (S.awakened[i] || (S.sigCount[i] || 0) < 3) return;
+  S.awakened[i] = true;
+  saveState();
+  SFX.ensure(); SFX.reveal(3);
+  FX.burst(160, ['#FFD700', '#FFF3B8', '#FFFFFF'], .5, .4, 1.4);
+  if (navigator.vibrate) try { navigator.vibrate([30, 40, 60]); } catch (e) {}
+  buildCodex(); codexSelect(i);
+  showToast('✦ ' + (SIGIL_LORE[i] ? SIGIL_LORE[i][0] : 'The sigil') + ' awakens — legendary +0.4%');
 }
 
 /* ---------------- Buttons ---------------- */
@@ -1668,6 +1824,17 @@ $('s-title').addEventListener('pointerup', () => {
   clearTimeout(titleHoldTimer);
   if (titleHeld) return;
   SFX.ensure(); SFX.select();
+  // first-run fast path: the Oracle chooses you — straight to the ritual, zero decisions
+  if (!S.persona && S.readings === 0) {
+    firstRun = true;
+    const ch = pick(P.filter(x => !x.locked && !x.egg));
+    S.persona = ch.id; S.realm = chakraToday().r || 'LIFE'; saveState();
+    FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c));
+    $('q-oracle-name').textContent = ch.name; buildRealms();
+    showToast('✨ ' + ch.name + ' answers your first call');
+    startRitual();
+    return;
+  }
   const p = persona();
   if (S.persona && isOwned(p)) { FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c)); $('q-oracle-name').textContent = p.name; newPrompt(); show('question'); }
   else show('persona');
@@ -1768,6 +1935,30 @@ $('snd-mute').onclick = () => {
 };
 $('snd-close').onclick = () => { SFX.tap(); $('sound-sheet').classList.remove('show'); };
 $('whisper').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('btn-get').click(); } });
+/* the whisper listens: typed questions quietly choose their own realm */
+const REALM_HINTS = {
+  LOVE: /\b(love|crush|ex|boyfriend|girlfriend|marry|marriage|dating|date|relationship|wife|husband|partner|romance|soulmate|breakup|kiss|him|her)\b/,
+  MONEY: /\b(money|cash|rich|invest|investment|crypto|bitcoin|debt|loan|salary|savings|broke|afford|buy|sell|price|rent)\b/,
+  CAREER: /\b(job|work|boss|career|promotion|interview|quit|startup|business|hire|hired|fired|client|company|deal|resume|launch)\b/,
+  CHAOS: /\b(chaos|risk|gamble|dare|adventure|tattoo|vegas|crazy|wild|move|travel|leap)\b/
+};
+$('whisper').addEventListener('input', e => {
+  if (realmTouched) return;
+  const v = e.target.value.toLowerCase();
+  if (!v) return;
+  for (const key of Object.keys(REALM_HINTS)) {
+    if (REALM_HINTS[key].test(v)) {
+      if (S.realm !== key && REALM_ELS[key]) {
+        S.realm = key;
+        document.querySelectorAll('.realm').forEach(r => r.classList.remove('on'));
+        REALM_ELS[key].classList.add('on', 'heard');
+        setTimeout(() => REALM_ELS[key].classList.remove('heard'), 1200);
+        SFX.ensure(); SFX.tap();
+      }
+      return;
+    }
+  }
+});
 
 /* ---------------- The Light Well ---------------- */
 const LW_EMOJI = {
@@ -2142,13 +2333,15 @@ YT.onAudioChange(on => SFX.setSystem(on));
     if (S.sound.alpha !== undefined) { S.sound.wave = S.sound.alpha ? 10 : 0; delete S.sound.alpha; }
     if (S.sound.wave === 10) S.sound.wave = 9.99;
     S.sound.wave = S.sound.wave || 0; S.sound.rain = !!S.sound.rain;
-    S.sound.vols = S.sound.vols || { tone432: .7, tone528: .7, w783: .7, w999: .7, rain: .7 }; }
+    S.sound.vols = S.sound.vols || { tone432: .7, tone528: .7, w783: .7, w999: .7, rain: .7 };
+    S.chain = S.chain || { n: 0 }; S.awakened = S.awakened || {};
+    if (!S.sigCount) { S.sigCount = {}; Object.keys(S.sigils).forEach(k => { S.sigCount[k] = 1; }); } }
   if (S.muted) SFX.setMuted(true);
   SFX.setLayers(S.sound.freq, S.sound.wave, S.sound.rain, soundVols());
   updateSoundPill();
   const ck = chakraToday();
   FX.setPersonaColor(ck.c, lightOf(ck.c));
-  $('title-chakra').textContent = ck.day + ' · ' + ck.n + ' Chakra';
+  $('title-chakra').textContent = ck.day + ' · ' + ck.n + ' Chakra · ✦ ' + ck.r + ' blessed today';
   $('title-chakra').style.color = `color-mix(in srgb, ${ck.c} 55%, #F0F8FF 45%)`;
   updateStreakUI();
   const boots = ['Aligning the cosmos…', 'Warming the orb…', 'Indexing ancient wisdom…'];
