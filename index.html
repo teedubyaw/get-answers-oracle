@@ -158,9 +158,9 @@
   #card.holo-rare #card-holo{opacity:.4;background:linear-gradient(115deg,transparent 28%,
     rgba(147,112,219,.34) 46%,rgba(230,230,250,.22) 54%,transparent 74%);background-size:230% 230%}
   #card.holo-epic #card-holo{opacity:.6}
-  #card.holo-legendary #card-holo{opacity:.75;background:linear-gradient(115deg,transparent 16%,
-    rgba(255,215,0,.4) 40%,rgba(255,255,255,.28) 52%,rgba(255,165,0,.36) 66%,transparent 86%);
-    background-size:260% 260%;background-repeat:no-repeat;animation:legsweep 3.2s linear infinite}
+  #card.holo-legendary #card-holo{opacity:.7;background:linear-gradient(115deg,transparent 41%,
+    rgba(255,215,0,.34) 47%,rgba(255,255,255,.32) 50%,rgba(255,165,0,.30) 53%,transparent 59%);
+    background-size:260% 260%;background-repeat:no-repeat;animation:legsweep 4.6s ease-in-out infinite}
   @keyframes legsweep{0%{background-position:210% 50%}100%{background-position:-110% 50%}}
   #card-sparkles{position:absolute;inset:0;pointer-events:none;display:none}
   #card.holo-legendary #card-sparkles{display:block}
@@ -684,7 +684,7 @@ const LIGHTWELL={"v":1,"cats":["Live Inspired","Thank You","Wish","Be Happy","Be
    ============================================================ */
 (() => {
 'use strict';
-const BUILD = 22;
+const BUILD = 23;
 try { console.log('✦ Get Answers — The Oracle · build ' + BUILD); } catch (e) {}
 
 /* ---------------- YouTube Playables shim ---------------- */
@@ -954,7 +954,7 @@ const FX = (() => {
   let flareIdx = 0, flareT = 0, flareNext = 2.5;
   let mode = 'boot';
   const ritual = { active: false, holding: false, angle: -Math.PI / 2, speed: 2.9, goldA: 0,
-    goldW: 0.16, epicW: 0.26, rareW: 0.42, epicColor: '#FFD60A', charge: 0, result: null };
+    goldW: 0.12, epicW: 0.26, rareW: 0.42, epicColor: '#FFD60A', charge: 0, result: null };
   let pulse = 0, running = true;
 
   function resize() {
@@ -1577,7 +1577,7 @@ const ritualUp = e => {
   SFX.release(align);
   if (zone === 4) S.chain.n++; else S.chain.n = 0;
   const read = $('alignment-read');
-  read.textContent = zone === 4 ? '✦ LEGENDARY STRIKE ✦' + (S.chain.n > 1 ? ' ×' + S.chain.n : '')
+  read.textContent = zone === 4 ? '✦ GOLD STRIKE ✦' + (S.chain.n > 1 ? ' ×' + S.chain.n : '')
     : zone === 3 ? '◆ EPIC ALIGNMENT · ' + align
     : zone === 2 ? 'RARE ALIGNMENT · ' + align
     : 'FAINT SIGNAL · ' + align;
@@ -1595,12 +1595,13 @@ document.addEventListener('pointerup', ritualUp, { passive: false });
 document.addEventListener('pointercancel', ritualUp, { passive: false });
 
 /* ---------------- Contemplation → reveal ---------------- */
-function rollRarity(align) {
+function rollRarity(align, zone) {
   const awakened = Object.keys(S.awakened).length;           // each awakened sigil: +0.4% legendary
   const dayBlessed = S.realm === chakraToday().r ? 0.05 : 0; // the day's chakra blesses its realm
   const chainBonus = Math.min(4, S.chain.n) * 0.01;
-  const pLeg = Math.min(0.30, 0.03 + (align / 100) * 0.12 + Math.min(S.streak.n, 10) * 0.004
-    + awakened * 0.004 + dayBlessed + chainBonus);
+  const goldStrike = zone === 4 ? 0.35 : 0;                  // a gold strike supercharges the odds — never guarantees
+  const pLeg = Math.min(zone === 4 ? 0.60 : 0.30, 0.03 + (align / 100) * 0.12 + Math.min(S.streak.n, 10) * 0.004
+    + awakened * 0.004 + dayBlessed + chainBonus + goldStrike);
   const pEpic = 0.10 + (align / 100) * 0.10;
   const pRare = 0.24;
   const r = Math.random();
@@ -1611,8 +1612,8 @@ function rollRarity(align) {
 function contemplate(align, zone) {
   show('contemplate');
   SFX.whoosh();
-  let rarity = rollRarity(align);
-  rarity = Math.max(rarity, zone === 4 ? 4 : zone === 3 ? 3 : zone === 2 ? 2 : 1); // ring zones floor the pull
+  let rarity = rollRarity(align, zone);
+  rarity = Math.max(rarity, zone === 4 ? 3 : zone === 3 ? 3 : zone === 2 ? 2 : 1); // zones floor the pull; gold floors Epic + huge legendary odds
   if (firstRun) rarity = Math.max(rarity, 3); // first pull is always a banger
   const cm = $('cm-text');
   const msgs = [pick(ORACLE_DATA.contemplations), pick(ORACLE_DATA.contemplations), pick(ORACLE_DATA.contemplations)];
