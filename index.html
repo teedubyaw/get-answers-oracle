@@ -373,6 +373,23 @@
     text-transform:uppercase;color:rgba(138,113,61,.55)}
   .lc-hint{margin-top:.4cqh;font-size:1.3cqh;letter-spacing:.24em;
     text-transform:uppercase;color:rgba(138,113,61,.45)}
+  /* ---------- light rarity tiers: the light chooses you ---------- */
+  #light-scene.lr2 .lc-face{border-color:rgba(231,110,168,.65);
+    box-shadow:0 0 5cqh rgba(231,110,168,.30),0 0 14cqh rgba(244,140,190,.15),inset 0 0 3cqh rgba(255,255,255,.7)}
+  #light-scene.lr2 .lc-kicker{color:#c05e8c}
+  #light-scene.lr3 .lc-face{border-color:rgba(155,110,235,.7);
+    box-shadow:0 0 5.5cqh rgba(155,110,235,.34),0 0 15cqh rgba(167,139,250,.16),inset 0 0 3cqh rgba(255,255,255,.7)}
+  #light-scene.lr3 .lc-kicker{color:#7d55c8}
+  #light-scene.lr4 .lc-face{border-color:#FFE9A8;
+    box-shadow:0 0 6.5cqh rgba(255,215,0,.5),0 0 18cqh rgba(255,200,120,.26),inset 0 0 3.4cqh rgba(255,255,255,.8)}
+  #light-scene.lr4 .lc-kicker{color:#a8770a;text-shadow:0 0 10px rgba(255,215,0,.5)}
+  #light-scene.lr4 .lc-rays{opacity:.85}
+  #light-scene.lr4 .lc-sparkles i{animation-duration:1.8s;
+    filter:drop-shadow(0 0 .8cqh rgba(255,185,40,1))}
+  #light-scene.lr4 .lc-holo{opacity:.8;background:linear-gradient(115deg,transparent 41%,
+    rgba(255,215,0,.42) 47%,rgba(255,255,255,.5) 50%,rgba(255,140,60,.36) 53%,transparent 59%);
+    background-size:260% 260%;background-repeat:no-repeat;
+    animation:legsweep 4.6s ease-in-out infinite}
   .lc-glare{position:absolute;inset:0;pointer-events:none;opacity:var(--lglare,0);mix-blend-mode:color-dodge;
     background:radial-gradient(46% 34% at var(--lgx,50%) var(--lgy,30%),rgba(255,236,180,.42),transparent 70%);
     transition:opacity .3s}
@@ -688,7 +705,7 @@ const LIGHTWELL={"v":1,"cats":["Live Inspired","Thank You","Wish","Be Happy","Be
    ============================================================ */
 (() => {
 'use strict';
-const BUILD = 25;
+const BUILD = 26;
 try { console.log('✦ Get Answers — The Oracle · build ' + BUILD); } catch (e) {}
 
 /* ---------------- YouTube Playables shim ---------------- */
@@ -2115,37 +2132,57 @@ function drawAffirmSolo(poolName, isToday) {
     if (!pool) { const names = Object.keys(pools); pool = names[(Math.random() * names.length) | 0]; }
     aff = pick(pools[pool]);
   }
-  lwCur = { q: null, mode: 'affirm', aff, today: !!isToday, cat: null, solo: true, pool };
+  const rar = rollLightRarity(isToday ? dailyLightR() : undefined);
+  lwCur = { q: null, mode: 'affirm', aff, today: !!isToday, cat: null, solo: true, pool, rar };
   S.lw.affs++; saveState();
   const inner = $('light-inner');
   inner.style.transition = 'none'; inner.style.setProperty('--lflip', '0deg');
   requestAnimationFrame(() => { inner.style.transition = ''; });
   $('lc-affirm').textContent = '♣ Another';
   $('lc-another').style.display = 'none';
+  lightSceneRarity(rar);
   paintLight(true);
   show('light');
-  FX.burst(70, ['#FFD700', '#FFF3B8', '#FFC48A', '#FFFFFF'], .5, .45, 1.2);
-  SFX.reveal(1);
-  if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) {}
+  FX.burst(rar >= 3 ? 150 : 70, ['#FFD700', '#FFF3B8', '#FFC48A', '#FFFFFF'], .5, .45, rar >= 3 ? 1.5 : 1.2);
+  SFX.reveal(rar);
+  if (navigator.vibrate) try { navigator.vibrate(rar >= 3 ? [20, 30, 50] : 12); } catch (e) {}
 }
 function lwDailyIdx(n) {
   const d = new Date();
   return (d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate()) % n;
+}
+/* the light chooses its own brilliance — no ritual, pure fate */
+function rollLightRarity(r) {
+  if (r === undefined) r = Math.random();
+  return r < 0.04 ? 4 : r < 0.16 ? 3 : r < 0.42 ? 2 : 1;
+}
+function dailyLightR() {
+  const d = new Date();
+  return (((d.getFullYear() * 372 + (d.getMonth() + 1) * 31 + d.getDate()) * 2654435761) % 1000) / 1000;
+}
+function lightSceneRarity(rar) {
+  const sc = $('light-scene');
+  sc.classList.remove('lr2', 'lr3', 'lr4');
+  if (rar > 1) sc.classList.add('lr' + rar);
+  if (rar === 4) setTimeout(() => showToast('✦ A legendary light finds you — pass it on'), 900);
+  else if (rar === 3) setTimeout(() => showToast('◆ An epic light finds you'), 900);
 }
 function drawLight(cat, isToday) {
   let q;
   if (isToday) q = LIGHTWELL.quotes[lwDailyIdx(LIGHTWELL.quotes.length)];
   else if (cat) q = pick(LW_QBYCAT[cat]);
   else q = pick(LIGHTWELL.quotes);
-  lwCur = { q, mode: 'quote', aff: null, today: !!isToday, cat: cat || null };
+  const rar = rollLightRarity(isToday ? dailyLightR() : undefined);
+  lwCur = { q, mode: 'quote', aff: null, today: !!isToday, cat: cat || null, rar };
   S.lw.draws++; saveState();
   setLightFlip(false, true);
   $('lc-another').style.display = '';
+  lightSceneRarity(rar);
   paintLight(true);
   show('light');
-  FX.burst(70, ['#FFD700', '#FFF3B8', '#FFC48A', '#FFFFFF'], .5, .45, 1.2);
-  SFX.reveal(1);
-  if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) {}
+  FX.burst(rar >= 3 ? 150 : 70, ['#FFD700', '#FFF3B8', '#FFC48A', '#FFFFFF'], .5, .45, rar >= 3 ? 1.5 : 1.2);
+  SFX.reveal(rar);
+  if (navigator.vibrate) try { navigator.vibrate(rar >= 3 ? [20, 30, 50] : 12); } catch (e) {}
 }
 function setLightFlip(on, instant) {
   const inner = $('light-inner');
@@ -2157,14 +2194,17 @@ function setLightFlip(on, instant) {
 }
 function paintLight(bloom) {
   const hint = document.querySelector('#light-card .lc-hint');
+  const rl = { 2: '◇ rare', 3: '◆ epic', 4: '✦ legendary ✦' }[lwCur.rar] || '';
   if (lwCur.solo) {
-    $('lc-kicker').textContent = lwCur.today ? '✨ today’s affirmation' : '♣ affirmation';
+    $('lc-kicker').textContent = (lwCur.today ? '✨ today’s affirmation' : (rl ? rl + ' affirmation' : '♣ affirmation'))
+      + (lwCur.today && rl ? ' · ' + rl : '');
     $('lc-cat').textContent = lwCur.pool;
     $('lc-text').textContent = lwCur.aff;
     $('lc-author').textContent = 'say it out loud. mean it.';
     hint.textContent = 'tap for another';
   } else {
-    $('lc-kicker').textContent = lwCur.today ? '✨ today’s light' : '✦ the light well';
+    $('lc-kicker').textContent = (lwCur.today ? '✨ today’s light' : (rl ? rl + ' light' : '✦ the light well'))
+      + (lwCur.today && rl ? ' · ' + rl : '');
     $('lc-cat').textContent = lwCur.q.c;
     $('lc-text').textContent = '“' + lwCur.q.t + '”';
     $('lc-author').textContent = '— ' + lwCur.q.by;
@@ -2291,7 +2331,9 @@ async function shareLight() {
   if (isQ) { g.addColorStop(0, '#FFFDF7'); g.addColorStop(.6, '#FFF3DC'); g.addColorStop(1, '#FBE4BC'); }
   else { g.addColorStop(0, '#FFF9F4'); g.addColorStop(.6, '#FFEBDC'); g.addColorStop(1, '#F9D9BC'); }
   x.fillStyle = g; rr(90, 200, 900, 1440, 48); x.fill(); x.shadowBlur = 0;
-  x.strokeStyle = 'rgba(255,180,50,.65)'; x.lineWidth = 5; rr(104, 214, 872, 1412, 40); x.stroke();
+  const lrar = lwCur.rar || 1;
+  x.strokeStyle = { 1: 'rgba(255,180,50,.65)', 2: 'rgba(209,106,158,.8)', 3: 'rgba(139,95,214,.8)', 4: '#FFD98A' }[lrar];
+  x.lineWidth = lrar === 4 ? 7 : 5; rr(104, 214, 872, 1412, 40); x.stroke();
   // gold foil band across the panel
   x.save(); x.globalCompositeOperation = 'overlay';
   g = x.createLinearGradient(190, 140, 890, 1700);
@@ -2309,8 +2351,10 @@ async function shareLight() {
   star(912, 1520, 17, .65); star(540, 252, 8, .45);
   x.textAlign = 'center';
   const poolName = lwCur.solo ? (lwCur.pool || '') : (LIGHTWELL.map[(lwCur.q || {}).c] || '');
-  const kicker = isQ ? (lwCur.today ? '✨ TODAY’S LIGHT' : '✦ THE LIGHT WELL')
+  let kicker = isQ ? (lwCur.today ? '✨ TODAY’S LIGHT' : '✦ THE LIGHT WELL')
     : (lwCur.solo && lwCur.today ? '✨ TODAY’S AFFIRMATION' : '♣ AFFIRMATION');
+  const rlbl = { 2: '◇ RARE', 3: '◆ EPIC', 4: '✦ LEGENDARY ✦' }[lrar];
+  if (rlbl) kicker += ' · ' + rlbl;
   const catName = (isQ ? lwCur.q.c : poolName).toUpperCase();
   x.fillStyle = '#b28a2a'; x.font = '600 32px Helvetica'; x.letterSpacing = '10px';
   x.fillText(kicker, 540, 322);
