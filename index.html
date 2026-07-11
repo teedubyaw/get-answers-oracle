@@ -684,7 +684,7 @@ const LIGHTWELL={"v":1,"cats":["Live Inspired","Thank You","Wish","Be Happy","Be
    ============================================================ */
 (() => {
 'use strict';
-const BUILD = 23;
+const BUILD = 24;
 try { console.log('✦ Get Answers — The Oracle · build ' + BUILD); } catch (e) {}
 
 /* ---------------- YouTube Playables shim ---------------- */
@@ -1356,7 +1356,7 @@ let S = {
   streak: { n: 0, last: '', best: 0 },
   readings: 0, legendaries: 0, sigils: {}, bags: {}, legBags: {},
   unlocked: {}, catFound: false, catSummons: 0,
-  chain: { n: 0 }, sigCount: {}, awakened: {},
+  chain: { n: 0 }, ring: { v: 0 }, sigCount: {}, awakened: {},
   lw: { draws: 0, affs: 0, shares: 0 },
   sound: { freq: 0, wave: 0, rain: false, vols: { tone432: .7, tone528: .7, w783: .7, w999: .7, rain: .7 } }
 };
@@ -1552,12 +1552,15 @@ function startRitual() {
   $('whisper').blur(); busy = false;
   FX.startRitual();
   // perfect chains raise the stakes: faster ring, tighter gold
-  const cn = Math.min(4, S.chain.n);
-  FX.ritual.speed = 2.9 + cn * 0.35;
+  // rubber-band ring: gold strikes speed it up (+12% per tier), full misses slow it down
+  FX.ritual.speed = 2.9 * Math.pow(1.12, S.ring.v);
   FX.ritual.epicColor = chakraToday().c;
   $('alignment-read').style.opacity = 0;
+  const spd = Math.round((Math.pow(1.12, S.ring.v) - 1) * 100);
   $('ritual-hint').innerHTML = '<b>HOLD</b> THE ORB · RELEASE IN THE <b>GOLD</b>' +
-    (S.chain.n > 0 ? ` <span style="color:var(--gold)">✦ ×${S.chain.n}</span>` : '');
+    (S.chain.n > 0 ? ` <span style="color:var(--gold)">✦ ×${S.chain.n}</span>` : '') +
+    (S.ring.v > 0 ? ` <span style="color:#9ecbff">⚡ +${spd}%</span>`
+      : S.ring.v < 0 ? ` <span style="color:#8fa3b8">🌙 ${spd}%</span>` : '');
 }
 const ritualDown = e => {
   if (currentScreen !== 'question' || FX.ritual.holding || busy) return;
@@ -1576,6 +1579,9 @@ const ritualUp = e => {
   if (!dailyBlessed && S.streak.last !== todayStr()) { align = Math.min(100, align + 15); blessed = true; dailyBlessed = true; }
   SFX.release(align);
   if (zone === 4) S.chain.n++; else S.chain.n = 0;
+  // the wheel answers your skill: strikes quicken it, whiffs give mercy
+  if (zone === 4) S.ring.v = Math.min(6, S.ring.v + 1);
+  else if (zone === 1) S.ring.v = Math.max(-4, S.ring.v - 1);
   const read = $('alignment-read');
   read.textContent = zone === 4 ? '✦ GOLD STRIKE ✦' + (S.chain.n > 1 ? ' ×' + S.chain.n : '')
     : zone === 3 ? '◆ EPIC ALIGNMENT · ' + align
@@ -2411,7 +2417,7 @@ YT.onAudioChange(on => SFX.setSystem(on));
     if (S.sound.wave === 10) S.sound.wave = 9.99;
     S.sound.wave = S.sound.wave || 0; S.sound.rain = !!S.sound.rain;
     S.sound.vols = S.sound.vols || { tone432: .7, tone528: .7, w783: .7, w999: .7, rain: .7 };
-    S.chain = S.chain || { n: 0 }; S.awakened = S.awakened || {};
+    S.chain = S.chain || { n: 0 }; S.ring = S.ring || { v: 0 }; S.awakened = S.awakened || {};
     Object.keys(S.bags).forEach(k => { if (k.indexOf(':') < 0) delete S.bags[k]; }); // pre-realm bag format
     if (!S.sigCount) { S.sigCount = {}; Object.keys(S.sigils).forEach(k => { S.sigCount[k] = 1; }); } }
   if (!S.persona) {
