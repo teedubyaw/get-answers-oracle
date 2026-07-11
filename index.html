@@ -145,7 +145,7 @@
     backface-visibility:hidden;-webkit-backface-visibility:hidden;
     border:2px solid var(--bg2);outline:1.5px solid var(--sent,#D3D3D3);outline-offset:-6px;
     box-shadow:0 0 4.5cqh color-mix(in srgb,var(--sent,#fff) 34%,transparent),0 0 20px rgba(255,255,255,.28)}
-  #card{display:flex;flex-direction:column;align-items:center;padding:3.6cqh 6cqw;
+  #card{display:flex;flex-direction:column;align-items:center;padding:3.4cqh 6cqw 4.8cqh;
     background:linear-gradient(160deg,#22456b 0%,#2b2350 55%,#1a1430 100%)}
   #card.legendary{background:linear-gradient(160deg,#3a2d0c 0%,#2b2350 60%,#1a1430 100%)}
   #card-glare{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:var(--glare,0);
@@ -196,12 +196,16 @@
   #back-brand{position:absolute;bottom:2.4cqh;font-size:1.5cqh;letter-spacing:.3em;color:rgba(240,248,255,.5)}
   #card-rarity{font-size:1.6cqh;letter-spacing:.5em;text-transform:uppercase;color:var(--sent,#D3D3D3);opacity:.95}
   #card-realm{font-size:1.5cqh;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-dim);margin-top:.8cqh}
-  #card-sigil{width:17cqh;height:17cqh;margin:2cqh 0 1.4cqh;filter:invert(1) drop-shadow(0 0 1.6cqh var(--sent,#fff));
+  #card-sigil{width:17cqh;height:17cqh;min-height:8cqh;flex-shrink:1;object-fit:contain;
+    margin:1.6cqh 0 1cqh;filter:invert(1) drop-shadow(0 0 1.6cqh var(--sent,#fff));
     opacity:.92;transition:transform 8s linear}
   #card-answer{font-family:var(--font-oracle);font-size:3cqh;line-height:1.42;text-align:center;color:#fff;
     flex:1;display:flex;flex-direction:column;justify-content:center;gap:1.6cqh;
     text-shadow:0 1px 14px rgba(0,0,0,.5)}
   #card-answer .t2{font-size:2.2cqh;font-style:italic;color:var(--ref)}
+  /* legendary prophecies run long — size down so the card always holds them */
+  #card.legendary #card-answer{font-size:2.6cqh;gap:1.2cqh}
+  #card.legendary #card-answer .t2{font-size:1.95cqh}
   #card-q{font-size:1.7cqh;color:rgba(240,248,255,.66);font-style:italic;font-family:var(--font-oracle);
     text-align:center;margin-top:1cqh;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #card-persona{font-size:1.6cqh;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-dim);margin-top:1.2cqh}
@@ -684,7 +688,7 @@ const LIGHTWELL={"v":1,"cats":["Live Inspired","Thank You","Wish","Be Happy","Be
    ============================================================ */
 (() => {
 'use strict';
-const BUILD = 24;
+const BUILD = 25;
 try { console.log('✦ Get Answers — The Oracle · build ' + BUILD); } catch (e) {}
 
 /* ---------------- YouTube Playables shim ---------------- */
