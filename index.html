@@ -79,13 +79,18 @@
     box-shadow:0 0 3cqh var(--pc)}
   .persona-card.selected{border-color:var(--pc);box-shadow:0 0 3.4cqh color-mix(in srgb,var(--pc) 45%,transparent)}
 
-  /* ---------- question ---------- */
-  #s-question{justify-content:flex-start;padding-top:13cqh}
-  #q-prompt{font-family:var(--font-oracle);font-style:italic;font-size:3.1cqh;line-height:1.45;text-align:center;
-    color:var(--ink);min-height:13cqh;display:flex;align-items:center;text-shadow:0 0 24px rgba(147,112,219,.5)}
+  /* ---------- ask (question + ritual) ---------- */
+  #s-question{justify-content:flex-start;padding-top:10.5cqh}
+  #q-prompt{font-family:var(--font-oracle);font-style:italic;font-size:2.6cqh;line-height:1.42;text-align:center;
+    color:var(--ink);min-height:8cqh;display:flex;align-items:center;text-shadow:0 0 24px rgba(147,112,219,.5)}
+  #ritual-hint{margin-top:2.2cqh;font-size:1.5cqh;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--ink-dim);text-align:center;line-height:1.8}
+  #ritual-hint b{color:var(--gold)}
+  #orb-zone{position:absolute;left:0;right:0;top:45%;bottom:0;touch-action:none;cursor:pointer}
+  #s-question #alignment-read{bottom:2.8cqh}
   #q-oracle-line{margin-top:1cqh;font-size:1.8cqh;color:var(--ink-dim);letter-spacing:.08em}
   #q-oracle-line b{color:var(--ink);cursor:pointer;border-bottom:1px dotted var(--ink-dim)}
-  #realms{display:flex;flex-wrap:wrap;gap:1.8cqw;justify-content:center;margin-top:3.4cqh}
+  #realms{display:flex;flex-wrap:wrap;gap:1.8cqw;justify-content:center;margin-top:2.2cqh}
   .realm{padding:1.3cqh 3.6cqw;border-radius:99px;border:1px solid rgba(240,248,255,.2);
     font-size:1.9cqh;letter-spacing:.06em;color:var(--ink-dim);cursor:pointer;transition:all .2s;
     display:flex;align-items:center;gap:1.6cqw}
@@ -93,7 +98,7 @@
     stroke-linejoin:round;stroke-linecap:round}
   .realm svg .dot{fill:currentColor;stroke:none}
   .realm.on{color:#fff;border-color:var(--blue);background:rgba(30,144,255,.16);box-shadow:0 0 2cqh rgba(30,144,255,.35)}
-  #whisper{margin-top:3.2cqh;width:100%;background:rgba(240,248,255,.05);border:1px solid rgba(240,248,255,.14);
+  #whisper{margin-top:2.2cqh;width:100%;background:rgba(240,248,255,.05);border:1px solid rgba(240,248,255,.14);
     border-radius:1.6cqh;color:var(--ink);font-family:var(--font-oracle);font-style:italic;font-size:2cqh;
     padding:1.8cqh 4cqw;text-align:center;outline:none}
   #whisper::placeholder{color:rgba(143,163,184,.55)}
@@ -446,20 +451,21 @@
       <button class="btn-primary" id="shop-close">Return</button>
     </section>
 
-    <!-- QUESTION -->
+    <!-- ASK: question + ritual, one screen, zero buttons -->
     <section class="screen" id="s-question">
       <div id="q-prompt"></div>
       <div id="q-oracle-line">consulting <b id="q-oracle-name"></b></div>
       <div id="realms"></div>
       <input id="whisper" type="text" maxlength="90" autocomplete="off"
         placeholder="whisper it here — it never leaves your device">
-      <button class="btn-primary" id="btn-get">GET ANSWER</button>
+      <div id="ritual-hint"><b>HOLD</b> THE ORB · RELEASE IN THE <b>GOLD</b></div>
+      <div id="orb-zone"></div>
+      <div id="alignment-read"></div>
     </section>
 
-    <!-- RITUAL -->
+    <!-- RITUAL (legacy shell, unused) -->
     <section class="screen" id="s-ritual">
-      <div id="ritual-instruction"><b>HOLD</b> THE ORB TO CHARGE<br>RELEASE IN THE <b>GOLD</b></div>
-      <div id="alignment-read"></div>
+      <div id="ritual-instruction"></div>
     </section>
 
     <!-- CONTEMPLATION -->
@@ -953,7 +959,7 @@ const FX = (() => {
       boot:        { x: .5, y: .62, r: .085, glow: .45 },
       title:       { x: .5, y: .585, r: .115, glow: .7 },
       persona:     { x: .5, y: .5, r: 0, glow: 0 },
-      question:    { x: .5, y: .5, r: 0, glow: 0 },
+      question:    { x: .5, y: .67, r: .092, glow: .8 },
       ritual:      { x: .5, y: .47, r: .1, glow: .8 },
       contemplate: { x: .5, y: .58, r: .085, glow: 1 },
       reveal:      { x: .5, y: .5, r: 0, glow: 0 },
@@ -1384,7 +1390,7 @@ function selectPersona(id) {
   FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c));
   $('q-oracle-name').textContent = p.name;
   document.querySelectorAll('.persona-card h3').forEach(h => h.parentElement.classList.toggle('selected', h.textContent === p.name));
-  setTimeout(() => { newPrompt(); show('question'); }, 260);
+  setTimeout(goAsk, 260);
 }
 
 /* ---------------- Shop, summons & milestones ---------------- */
@@ -1438,7 +1444,8 @@ function checkMilestones() {
 function openEgg() { $('egg-sheet').classList.add('show'); SFX.ensure(); SFX.meow(); }
 
 /* ---------------- Card tilt, glare & flip ---------------- */
-let flipped = false, onFirstFlip = null, firstRun = false, pendingRepair = 0;
+let flipped = false, onFirstFlip = null, firstRun = false, pendingRepair = 0,
+  contemplateGo = null, contemplateStart = 0, revealAutoFlip = null;
 function setFlip(on, instant) {
   flipped = on;
   const inner = $('card-inner');
@@ -1482,7 +1489,11 @@ function setFlip(on, instant) {
     if ((moved < 10 && dt < 420) || Math.abs(dx) > 44) doFlip();
   });
   scene.addEventListener('pointerleave', () => { down = null; settle(); });
+  revealAutoFlip = doFlip;
 })();
+$('s-contemplate').addEventListener('pointerup', () => {
+  if (currentScreen === 'contemplate' && contemplateGo && Date.now() - contemplateStart > 900) { SFX.tap(); contemplateGo(); }
+});
 function buildRealms() {
   const wrap = $('realms'); wrap.innerHTML = '';
   REALMS.forEach(([svg, label, key]) => {
@@ -1505,26 +1516,31 @@ function updateStreakUI() {
 }
 
 /* ---------------- The ritual ---------------- */
+function goAsk() {
+  newPrompt();
+  show('question');
+  startRitual();
+}
 function startRitual() {
   $('whisper').blur(); busy = false;
-  show('ritual'); FX.startRitual();
+  FX.startRitual();
   // perfect chains raise the stakes: faster ring, tighter gold
   const cn = Math.min(4, S.chain.n);
   FX.ritual.speed = 2.9 + cn * 0.35;
   FX.ritual.goldW = Math.max(0.46, 0.62 - cn * 0.04);
   $('alignment-read').style.opacity = 0;
-  $('ritual-instruction').innerHTML = '<b>HOLD</b> THE ORB TO CHARGE<br>RELEASE IN THE <b>GOLD</b>' +
-    (S.chain.n > 0 ? `<br><span style="color:var(--gold)">✦ chain ×${S.chain.n}${S.chain.n >= 2 ? ' — one more perfect = EPIC+' : ''}</span>` : '');
+  $('ritual-hint').innerHTML = '<b>HOLD</b> THE ORB · RELEASE IN THE <b>GOLD</b>' +
+    (S.chain.n > 0 ? ` <span style="color:var(--gold)">✦ ×${S.chain.n}${S.chain.n >= 2 ? ' — next perfect = EPIC+' : ''}</span>` : '');
 }
 const ritualDown = e => {
-  if (currentScreen !== 'ritual' || FX.ritual.holding || busy) return;
-  e.preventDefault(); SFX.ensure(); SFX.resume();
+  if (currentScreen !== 'question' || FX.ritual.holding || busy) return;
+  e.preventDefault(); $('whisper').blur(); SFX.ensure(); SFX.resume();
   FX.ritual.holding = true; FX.ritual.charge = 0; SFX.chargeStart();
 };
 const ritualUp = e => {
-  if (currentScreen !== 'ritual' || !FX.ritual.holding || busy) return;
+  if (currentScreen !== 'question' || !FX.ritual.holding || busy) return;
   e.preventDefault(); SFX.chargeEnd();
-  if (FX.ritual.charge < 0.14) { FX.ritual.holding = false; $('ritual-instruction').innerHTML = 'TOO FAINT — <b>HOLD LONGER</b><br>RELEASE IN THE <b>GOLD</b>'; return; }
+  if (FX.ritual.charge < 0.14) { FX.ritual.holding = false; $('ritual-hint').innerHTML = 'TOO FAINT — <b>HOLD LONGER</b> · RELEASE IN THE <b>GOLD</b>'; return; }
   busy = true;
   let align = FX.releaseRitual();
   let blessed = false;
@@ -1543,7 +1559,7 @@ const ritualUp = e => {
   if (navigator.vibrate) try { navigator.vibrate(align >= 100 ? [30, 40, 60] : 25); } catch (err) {}
   setTimeout(() => { FX.stopRitual(); contemplate(align); }, 950);
 };
-document.addEventListener('pointerdown', ritualDown, { passive: false });
+$('orb-zone').addEventListener('pointerdown', ritualDown, { passive: false });
 document.addEventListener('pointerup', ritualUp, { passive: false });
 document.addEventListener('pointercancel', ritualUp, { passive: false });
 
@@ -1579,7 +1595,9 @@ function contemplate(align) {
     setTimeout(() => { FX.vortex(70, ['#FFD700', '#FFA500', '#FFF3B8']); }, 1000);
     setTimeout(() => { FX.burst(30, ['#FFD700', '#FFF3B8'], .5, .58, .7); }, 2200);
   }
-  setTimeout(() => { clearInterval(iv); doReveal(align, rarity); }, 3690); // the sacred 3.69s
+  contemplateStart = Date.now();
+  contemplateGo = () => { contemplateGo = null; clearInterval(iv); doReveal(align, rarity); };
+  setTimeout(() => { if (contemplateGo) contemplateGo(); }, 3690); // the sacred 3.69s — tap to hasten
 }
 function doReveal(align, rarity) {
   if (rarity === undefined) rarity = rollRarity(align);
@@ -1677,6 +1695,8 @@ function doReveal(align, rarity) {
   };
   show('reveal');
   SFX.tap();
+  // impatience insurance: the card flips itself if the player just stares
+  setTimeout(() => { if (onFirstFlip && currentScreen === 'reveal' && revealAutoFlip) revealAutoFlip(); }, 3200);
   busy = false;
 }
 
@@ -1842,46 +1862,35 @@ function awakenSigil(i) {
 }
 
 /* ---------------- Buttons ---------------- */
-let titleHoldTimer = null, titleHeld = false;
-$('s-title').addEventListener('pointerdown', () => {
-  titleHeld = false;
-  titleHoldTimer = setTimeout(() => {
-    titleHeld = true;
+function enterOracle() {
+  const p = persona();
+  if (S.persona && isOwned(p)) {
+    FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c));
+    $('q-oracle-name').textContent = p.name;
+    goAsk();
+  } else show('persona');
+}
+$('s-title').addEventListener('pointerup', () => { SFX.ensure(); SFX.select(); enterOracle(); });
+// the Oracle Cat now hides behind a long-press on the streak flame
+let eggHoldTimer = null;
+$('pill-streak').addEventListener('pointerdown', () => {
+  eggHoldTimer = setTimeout(() => {
     const cat = P.find(x => x.id === 'cat');
     if (cat && !isOwned(cat)) openEgg(); else if (cat) { SFX.meow(); selectPersona('cat'); }
   }, 1100);
 });
-$('s-title').addEventListener('pointerup', () => {
-  clearTimeout(titleHoldTimer);
-  if (titleHeld) return;
-  SFX.ensure(); SFX.select();
-  // first-run fast path: the Oracle chooses you — straight to the ritual, zero decisions
-  if (!S.persona && S.readings === 0) {
-    firstRun = true;
-    const ch = pick(P.filter(x => !x.locked && !x.egg));
-    S.persona = ch.id; S.realm = chakraToday().r || 'LIFE'; saveState();
-    FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c));
-    $('q-oracle-name').textContent = ch.name; buildRealms();
-    showToast('✨ ' + ch.name + ' answers your first call');
-    startRitual();
-    return;
-  }
-  const p = persona();
-  if (S.persona && isOwned(p)) { FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c)); $('q-oracle-name').textContent = p.name; newPrompt(); show('question'); }
-  else show('persona');
-});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => $('pill-streak').addEventListener(ev, () => clearTimeout(eggHoldTimer)));
 $('btn-shop').onclick = () => { SFX.ensure(); SFX.tap(); openShop(); };
 $('shop-close').onclick = () => { SFX.tap(); buildPersonas(); show('persona'); };
 $('egg-watch').onclick = async () => { $('egg-sheet').classList.remove('show'); await summonToday('cat'); selectPersona('cat'); };
 $('egg-later').onclick = () => { SFX.tap(); $('egg-sheet').classList.remove('show'); };
-$('btn-get').onclick = e => { e.stopPropagation(); SFX.ensure(); SFX.tap(); startRitual(); };
 $('q-oracle-line').onclick = () => { SFX.tap(); show('persona'); };
 $('reveal-again').onclick = async () => {
   SFX.tap();
   if (S.readings > 0 && S.readings % 3 === 0) {
     await YT.interstitial(() => fakeInterlude(1100, '✦ Cosmic Interlude ✦', 'on YouTube, an interstitial ad plays here'));
   }
-  newPrompt(); $('whisper').value = ''; show('question');
+  $('whisper').value = ''; goAsk();
 };
 $('btn-share').onclick = shareCard;
 $('btn-second').onclick = async () => {
@@ -1965,7 +1974,7 @@ $('snd-mute').onclick = () => {
   saveState(); buildSoundSheet(); updateSoundPill();
 };
 $('snd-close').onclick = () => { SFX.tap(); $('sound-sheet').classList.remove('show'); };
-$('whisper').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('btn-get').click(); } });
+$('whisper').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('whisper').blur(); } });
 /* the whisper listens: typed questions quietly choose their own realm */
 const REALM_HINTS = {
   LOVE: /\b(love|crush|ex|boyfriend|girlfriend|marry|marriage|dating|date|relationship|wife|husband|partner|romance|soulmate|breakup|kiss|him|her)\b/,
@@ -2189,14 +2198,7 @@ function lightAffirm() {
 })();
 $('btn-lightwell').onclick = () => { SFX.ensure(); SFX.tap(); openLightWell(false); };
 $('btn-affirm').onclick = () => { SFX.ensure(); SFX.tap(); openLightWell(true); };
-$('btn-oracle').onclick = () => {
-  SFX.ensure(); SFX.tap();
-  const p = persona();
-  if (S.persona && isOwned(p)) {
-    FX.setPersonaColor(chakraToday().c, lightOf(chakraToday().c));
-    $('q-oracle-name').textContent = p.name; newPrompt(); show('question');
-  } else show('persona');
-};
+$('btn-oracle').onclick = () => { SFX.ensure(); SFX.tap(); enterOracle(); };
 (() => {
   const bl = $('btn-lightwell-title');
   bl.addEventListener('pointerdown', e => e.stopPropagation());
@@ -2368,6 +2370,14 @@ YT.onAudioChange(on => SFX.setSystem(on));
     S.chain = S.chain || { n: 0 }; S.awakened = S.awakened || {};
     Object.keys(S.bags).forEach(k => { if (k.indexOf(':') < 0) delete S.bags[k]; }); // pre-realm bag format
     if (!S.sigCount) { S.sigCount = {}; Object.keys(S.sigils).forEach(k => { S.sigCount[k] = 1; }); } }
+  if (!S.persona) {
+    // the Oracle chooses first-timers — no decision gate before the first wonder
+    firstRun = S.readings === 0;
+    S.persona = pick(P.filter(x => !x.locked && !x.egg)).id;
+    if (firstRun) S.realm = chakraToday().r || 'LIFE';
+    saveState();
+  }
+  buildPersonas(); buildRealms(); // rebuilt with merged save state
   if (S.muted) SFX.setMuted(true);
   SFX.setLayers(S.sound.freq, S.sound.wave, S.sound.rain, soundVols());
   updateSoundPill();
@@ -2383,6 +2393,12 @@ YT.onAudioChange(on => SFX.setSystem(on));
     clearInterval(biv);
     show('title');
     await YT.gameReady();
+    // the splash bows out on its own — a tap skips it sooner
+    setTimeout(() => {
+      if (currentScreen !== 'title') return;
+      enterOracle();
+      if (firstRun) showToast('✨ ' + persona().name + ' answers your first call');
+    }, 1500);
   }, 1350);
 })();
 
