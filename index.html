@@ -1163,8 +1163,8 @@ const FX = (() => {
     cx.restore();
     cx.globalAlpha = 1;
 
-    // ring centers on the full artwork — glass plus golden base — not just the sphere
-    if (ritual.active) drawRing(X, Y + R * 0.35, R * 1.52, dt);
+    // ring centers on the full artwork — glass plus golden base — with breathing room all around
+    if (ritual.active) drawRing(X, Y + R * 0.35, R * 1.78, dt);
   }
   function drawRing(X, Y, RR, dt) {
     // track
