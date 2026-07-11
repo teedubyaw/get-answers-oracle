@@ -211,7 +211,12 @@
     text-align:center;transition:transform .15s}
   .btn-secondary:active{transform:scale(.96)}
   .btn-secondary.gold{border-color:rgba(255,215,0,.45);color:var(--gold)}
-  #reveal-again{margin-top:2.2cqh;width:100%;padding:2.2cqh;font-size:2.4cqh}
+  #reveal-ctas{width:100%;display:flex;gap:2.4cqw;margin-top:2.2cqh}
+  #reveal-ctas .btn-primary{flex:1;min-width:0;max-width:none;margin:0;padding:2cqh 1cqw;
+    font-size:1.62cqh;letter-spacing:.18em;text-indent:.18em;white-space:nowrap}
+  .btn-primary.lw-cta{background:linear-gradient(#241b0fee,#241b0fee) padding-box,
+    linear-gradient(120deg,#FFD700,#FFA500 55%,#FFF3B8) border-box;
+    box-shadow:0 0 2.8cqh rgba(255,215,0,.25),inset 0 0 2cqh rgba(255,215,0,.12)}
   #second-opinion-wrap{width:100%;margin-top:2cqh;display:none}
   #second-card{border-radius:2cqh;border:1px dashed rgba(240,248,255,.3);padding:2.2cqh 4cqw;
     font-family:var(--font-oracle);font-style:italic;font-size:2.1cqh;text-align:center;color:var(--ref)}
@@ -512,7 +517,10 @@
         <div class="btn-secondary" id="btn-share">Share ✨</div>
         <div class="btn-secondary gold" id="btn-second">📺 2nd Opinion</div>
       </div>
-      <button class="btn-primary" id="reveal-again">ASK AGAIN</button>
+      <div id="reveal-ctas">
+        <button class="btn-primary lw-cta" id="btn-gift">✨ RECEIVE A LIGHT</button>
+        <button class="btn-primary" id="reveal-again">ASK AGAIN</button>
+      </div>
     </section>
 
     <!-- CODEX -->
@@ -1893,6 +1901,22 @@ $('reveal-again').onclick = async () => {
   $('whisper').value = ''; goAsk();
 };
 $('btn-share').onclick = shareCard;
+/* the gift: after the oracle speaks, hand them a light tuned to their realm */
+const GIFT_CATS = {
+  LOVE: ['Love', 'Self Love', 'You Matter'],
+  MONEY: ['Grateful', 'Cultivate Greatness', 'Believe'],
+  CAREER: ["You've Got This", 'Cultivate Greatness', 'Ignite Your Ideas', 'Carpe Diem'],
+  CHAOS: ['Embrace Calm', 'Live Inspired', 'Wish'],
+  LIFE: ['Live Inspired', 'Life Is Beautiful', 'Hope', 'Shine']
+};
+$('btn-gift').onclick = () => {
+  SFX.ensure(); SFX.select();
+  lwAffirmMode = false;
+  lwReturn = 'reveal';
+  const cats = (GIFT_CATS[current ? current.realm : 'LIFE'] || []).filter(c => LW_QBYCAT[c] && LW_QBYCAT[c].length);
+  drawLight(cats.length ? pick(cats) : null, false);
+  showToast('✨ A light for your journey — our gift');
+};
 $('btn-second').onclick = async () => {
   if (secondUsed || !current) return;
   SFX.tap();
