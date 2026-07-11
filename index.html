@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Get Answers — The Oracle</title>
+<script src="https://www.youtube.com/game_api/v1"></script>
 <style>
   :root{
     --bg0:#070b10; --bg1:#1C2526; --bg2:#2F2F2F;
@@ -636,9 +637,21 @@ const LIGHTWELL={"v":1,"cats":["Live Inspired","Thank You","Wish","Be Happy","Be
 
 /* ---------------- YouTube Playables shim ---------------- */
 const YT = (() => {
-  const sdk = (typeof window !== 'undefined' && window.ytgame) ? window.ytgame : null;
+  // the SDK script defines window.ytgame everywhere; only trust it inside the Playables env
+  const sdk = (typeof window !== 'undefined' && window.ytgame && window.ytgame.IN_PLAYABLES_ENV) ? window.ytgame : null;
   let memStore = null;
   const inYT = !!sdk;
+  // health: report uncaught errors to YouTube (certification SHOULD)
+  if (inYT && sdk.health && sdk.health.logError) {
+    window.addEventListener('error', () => { try { sdk.health.logError(); } catch (e) {} });
+    window.addEventListener('unhandledrejection', () => { try { sdk.health.logError(); } catch (e) {} });
+  }
+  async function language() {
+    if (inYT && sdk.system && sdk.system.getLanguage) {
+      try { return await sdk.system.getLanguage(); } catch (e) {}
+    }
+    return (navigator.language || 'en').slice(0, 2);
+  }
 
   async function firstFrameReady() {
     try { sdk?.game?.firstFrameReady?.(); } catch (e) {}
@@ -683,7 +696,7 @@ const YT = (() => {
   function onAudioChange(cb) { try { sdk?.system?.onAudioEnabledChange?.(cb); if (sdk?.system?.isAudioEnabled) cb(!!sdk.system.isAudioEnabled()); } catch (e) {} }
   function onPause(cb) { try { sdk?.system?.onPause?.(cb); } catch (e) {} }
   function onResume(cb) { try { sdk?.system?.onResume?.(cb); } catch (e) {} }
-  return { inYT, firstFrameReady, gameReady, save, load, interstitial, rewarded, sendScore, onAudioChange, onPause, onResume };
+  return { inYT, firstFrameReady, gameReady, save, load, interstitial, rewarded, sendScore, onAudioChange, onPause, onResume, language };
 })();
 
 /* ---------------- Audio engine (WebAudio, no assets) ---------------- */
@@ -2120,6 +2133,9 @@ YT.onAudioChange(on => SFX.setSystem(on));
 
 /* ---------------- Boot ---------------- */
 (async function boot() {
+  // signal first paint as early as possible — the canvas is already rendering
+  await YT.firstFrameReady();
+  YT.language().then(l => { document.documentElement.lang = l || 'en'; }).catch(() => {});
   buildPersonas(); buildRealms();
   const saved = await YT.load();
   if (saved && saved.v === 1) { S = Object.assign(S, saved); S.bags = S.bags || {}; S.legBags = S.legBags || {}; S.unlocked = S.unlocked || {}; S.catSummons = S.catSummons || 0; S.lw = S.lw || { draws: 0, affs: 0, shares: 0 }; S.sound = S.sound || { freq: 0, wave: 0, rain: false };
@@ -2135,7 +2151,6 @@ YT.onAudioChange(on => SFX.setSystem(on));
   $('title-chakra').textContent = ck.day + ' · ' + ck.n + ' Chakra';
   $('title-chakra').style.color = `color-mix(in srgb, ${ck.c} 55%, #F0F8FF 45%)`;
   updateStreakUI();
-  await YT.firstFrameReady();
   const boots = ['Aligning the cosmos…', 'Warming the orb…', 'Indexing ancient wisdom…'];
   let bi = 0;
   const biv = setInterval(() => { bi++; if (bi < boots.length) $('boot-text').textContent = boots[bi]; }, 420);
