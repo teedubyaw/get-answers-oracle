@@ -211,8 +211,8 @@
     text-align:center;transition:transform .15s}
   .btn-secondary:active{transform:scale(.96)}
   .btn-secondary.gold{border-color:rgba(255,215,0,.45);color:var(--gold)}
-  #reveal-ctas{width:100%;display:flex;gap:2.4cqw;margin-top:2.2cqh}
-  #reveal-ctas .btn-primary{flex:1;min-width:0;max-width:none;margin:0;padding:2cqh 1cqw;
+  #reveal-ctas,#light-ctas{width:100%;display:flex;gap:2.4cqw;margin-top:2.2cqh}
+  #reveal-ctas .btn-primary,#light-ctas .btn-primary{flex:1;min-width:0;max-width:none;margin:0;padding:2cqh 1cqw;
     font-size:1.62cqh;letter-spacing:.18em;text-indent:.18em;white-space:nowrap}
   .btn-primary.lw-cta{background:linear-gradient(#241b0fee,#241b0fee) padding-box,
     linear-gradient(120deg,#FFD700,#FFA500 55%,#FFF3B8) border-box;
@@ -581,7 +581,10 @@
         <div class="btn-secondary" id="lc-save">Share</div>
         <div class="btn-secondary" id="lc-another">Another</div>
       </div>
-      <button class="btn-primary" id="light-close">BACK TO THE WELL</button>
+      <div id="light-ctas">
+        <button class="btn-primary" id="light-oracle">🔮 VISIT THE ORACLE</button>
+        <button class="btn-primary lw-cta" id="light-close">✨ BACK TO THE LIGHT</button>
+      </div>
     </section>
 
     <div id="interlude"><div class="inner">
@@ -948,7 +951,8 @@ const FX = (() => {
   });
   let flareIdx = 0, flareT = 0, flareNext = 2.5;
   let mode = 'boot';
-  const ritual = { active: false, holding: false, angle: -Math.PI / 2, speed: 2.9, goldA: 0, goldW: 0.62, charge: 0, result: null };
+  const ritual = { active: false, holding: false, angle: -Math.PI / 2, speed: 2.9, goldA: 0,
+    goldW: 0.16, epicW: 0.26, rareW: 0.42, epicColor: '#FFD60A', charge: 0, result: null };
   let pulse = 0, running = true;
 
   function resize() {
@@ -1171,23 +1175,30 @@ const FX = (() => {
     cx.restore();
     cx.globalAlpha = 1;
 
-    // ring centers on the full artwork — glass plus golden base — with breathing room all around
-    if (ritual.active) drawRing(X, Y + R * 0.35, R * 1.78, dt);
+    // ring centers on the full artwork — glass plus golden base — breathing gently while it waits
+    if (ritual.active) {
+      const ringBreath = ritual.holding ? 1 : 1 + Math.sin(t * 0.85) * 0.035;
+      drawRing(X, Y + R * 0.35, R * 1.78 * ringBreath, dt);
+    }
   }
   function drawRing(X, Y, RR, dt) {
     // track
     cx.lineWidth = 2.6 * DPR; cx.strokeStyle = 'rgba(240,248,255,' + (0.14 + ritual.charge * 0.3).toFixed(3) + ')';
     cx.beginPath(); cx.arc(X, Y, RR, 0, 7); cx.stroke();
-    // silver flanks
-    const silver = 0.42;
+    // three prize zones around the gold center: gray = rare, chakra = epic, gold = legendary
+    const g0 = ritual.goldW / 2, e1 = g0 + ritual.epicW, r1 = e1 + ritual.rareW;
     cx.strokeStyle = 'rgba(230,230,250,.4)'; cx.lineWidth = 3.4 * DPR;
-    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA - ritual.goldW / 2 - silver, ritual.goldA - ritual.goldW / 2); cx.stroke();
-    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA + ritual.goldW / 2, ritual.goldA + ritual.goldW / 2 + silver); cx.stroke();
-    // gold zone
+    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA - r1, ritual.goldA - e1); cx.stroke();
+    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA + e1, ritual.goldA + r1); cx.stroke();
+    cx.strokeStyle = ritual.epicColor; cx.lineWidth = 4.2 * DPR;
+    cx.shadowColor = ritual.epicColor; cx.shadowBlur = 8 * DPR;
+    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA - e1, ritual.goldA - g0); cx.stroke();
+    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA + g0, ritual.goldA + e1); cx.stroke();
+    cx.shadowBlur = 0;
     const gg = cx.createLinearGradient(X - RR, Y, X + RR, Y);
     gg.addColorStop(0, '#FFD700'); gg.addColorStop(1, '#FFA500');
-    cx.strokeStyle = gg; cx.lineWidth = 5 * DPR; cx.shadowColor = '#FFD700'; cx.shadowBlur = 14 * DPR;
-    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA - ritual.goldW / 2, ritual.goldA + ritual.goldW / 2); cx.stroke();
+    cx.strokeStyle = gg; cx.lineWidth = 5.4 * DPR; cx.shadowColor = '#FFD700'; cx.shadowBlur = 16 * DPR;
+    cx.beginPath(); cx.arc(X, Y, RR, ritual.goldA - g0, ritual.goldA + g0); cx.stroke();
     cx.shadowBlur = 0;
     // marker
     if (ritual.holding) {
@@ -1243,17 +1254,17 @@ const FX = (() => {
     requestAnimationFrame(frame);
   }
   function releaseRitual() {
-    // angle distance to gold center
+    // angle distance to gold center → which prize zone did they strike
     const norm = a => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
     let d = Math.abs(norm(ritual.angle) - norm(ritual.goldA));
     if (d > Math.PI) d = Math.PI * 2 - d;
-    const silver = 0.42;
-    let align;
-    if (d <= ritual.goldW / 2) align = 100;
-    else if (d <= ritual.goldW / 2 + silver) align = 70;
-    else align = Math.round(30 + ritual.charge * 20);
+    let align, zone;
+    if (d <= ritual.goldW / 2) { align = 100; zone = 4; }
+    else if (d <= ritual.goldW / 2 + ritual.epicW) { align = 85; zone = 3; }
+    else if (d <= ritual.goldW / 2 + ritual.epicW + ritual.rareW) { align = 70; zone = 2; }
+    else { align = Math.round(30 + ritual.charge * 20); zone = 1; }
     ritual.holding = false;
-    return align;
+    return { align, zone };
   }
   window.addEventListener('resize', resize);
   resize(); requestAnimationFrame(frame);
@@ -1541,10 +1552,10 @@ function startRitual() {
   // perfect chains raise the stakes: faster ring, tighter gold
   const cn = Math.min(4, S.chain.n);
   FX.ritual.speed = 2.9 + cn * 0.35;
-  FX.ritual.goldW = Math.max(0.46, 0.62 - cn * 0.04);
+  FX.ritual.epicColor = chakraToday().c;
   $('alignment-read').style.opacity = 0;
   $('ritual-hint').innerHTML = '<b>HOLD</b> THE ORB · RELEASE IN THE <b>GOLD</b>' +
-    (S.chain.n > 0 ? ` <span style="color:var(--gold)">✦ ×${S.chain.n}${S.chain.n >= 2 ? ' — next perfect = EPIC+' : ''}</span>` : '');
+    (S.chain.n > 0 ? ` <span style="color:var(--gold)">✦ ×${S.chain.n}</span>` : '');
 }
 const ritualDown = e => {
   if (currentScreen !== 'question' || FX.ritual.holding || busy) return;
@@ -1556,22 +1567,26 @@ const ritualUp = e => {
   e.preventDefault(); SFX.chargeEnd();
   if (FX.ritual.charge < 0.14) { FX.ritual.holding = false; $('ritual-hint').innerHTML = 'TOO FAINT — <b>HOLD LONGER</b> · RELEASE IN THE <b>GOLD</b>'; return; }
   busy = true;
-  let align = FX.releaseRitual();
+  const rel = FX.releaseRitual();
+  let align = rel.align;
+  const zone = rel.zone;
   let blessed = false;
   if (!dailyBlessed && S.streak.last !== todayStr()) { align = Math.min(100, align + 15); blessed = true; dailyBlessed = true; }
   SFX.release(align);
-  if (align >= 100) S.chain.n++; else S.chain.n = 0;
+  if (zone === 4) S.chain.n++; else S.chain.n = 0;
   const read = $('alignment-read');
-  read.textContent = align >= 100
-    ? '✦ PERFECT ALIGNMENT ✦' + (S.chain.n > 1 ? ' ×' + S.chain.n : '') + (S.chain.n >= 3 ? ' — EPIC+ GUARANTEED' : '')
-    : align >= 70 ? 'ALIGNED · ' + align : 'FAINT SIGNAL · ' + align;
-  read.style.color = align >= 100 ? '#FFD700' : align >= 70 ? '#E6E6FA' : '#8fa3b8';
+  read.textContent = zone === 4 ? '✦ LEGENDARY STRIKE ✦' + (S.chain.n > 1 ? ' ×' + S.chain.n : '')
+    : zone === 3 ? '◆ EPIC ALIGNMENT · ' + align
+    : zone === 2 ? 'RARE ALIGNMENT · ' + align
+    : 'FAINT SIGNAL · ' + align;
+  read.style.color = zone === 4 ? '#FFD700' : zone === 3 ? chakraToday().c : zone === 2 ? '#E6E6FA' : '#8fa3b8';
   if (blessed) read.textContent += '  (+15 daily blessing)';
   read.style.opacity = 1;
   const p = persona();
-  FX.burst(align >= 100 ? 90 : 40, [p.glow, '#F0F8FF', p.color]);
-  if (navigator.vibrate) try { navigator.vibrate(align >= 100 ? [30, 40, 60] : 25); } catch (err) {}
-  setTimeout(() => { FX.stopRitual(); contemplate(align); }, 950);
+  FX.burst(zone === 4 ? 120 : zone === 3 ? 70 : 40,
+    zone === 4 ? ['#FFD700', '#FFA500', '#fff'] : [p.glow, '#F0F8FF', p.color]);
+  if (navigator.vibrate) try { navigator.vibrate(zone === 4 ? [30, 40, 80] : zone === 3 ? [20, 30, 40] : 25); } catch (err) {}
+  setTimeout(() => { FX.stopRitual(); contemplate(align, zone); }, 950);
 };
 $('orb-zone').addEventListener('pointerdown', ritualDown, { passive: false });
 document.addEventListener('pointerup', ritualUp, { passive: false });
@@ -1591,10 +1606,11 @@ function rollRarity(align) {
   if (S.chain.n >= 3 && rarity < 3) rarity = 3;              // three perfects in a row guarantee Epic+
   return rarity;
 }
-function contemplate(align) {
+function contemplate(align, zone) {
   show('contemplate');
   SFX.whoosh();
   let rarity = rollRarity(align);
+  rarity = Math.max(rarity, zone === 4 ? 4 : zone === 3 ? 3 : zone === 2 ? 2 : 1); // ring zones floor the pull
   if (firstRun) rarity = Math.max(rarity, 3); // first pull is always a banger
   const cm = $('cm-text');
   const msgs = [pick(ORACLE_DATA.contemplations), pick(ORACLE_DATA.contemplations), pick(ORACLE_DATA.contemplations)];
@@ -2230,6 +2246,7 @@ $('btn-oracle').onclick = () => { SFX.ensure(); SFX.tap(); enterOracle(); };
 })();
 $('lw-close').onclick = () => { SFX.tap(); show(['lightwell', 'light'].includes(lwReturn) ? 'title' : lwReturn); };
 $('light-close').onclick = () => { SFX.tap(); buildLWGrid(); show('lightwell'); };
+$('light-oracle').onclick = () => { SFX.ensure(); SFX.tap(); enterOracle(); };
 $('lc-affirm').onclick = e => { e.stopPropagation(); lightAffirm(); };
 $('lc-another').onclick = e => {
   e.stopPropagation(); SFX.ensure();
