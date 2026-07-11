@@ -490,7 +490,7 @@
                 <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
               </div>
               <div id="card-glare"></div>
-              <div id="flip-hint">tap to flip</div>
+              <div id="flip-hint">tap for your sigil</div>
             </div>
             <div class="card-face" id="card-back">
               <img id="back-sigil" alt="">
@@ -1680,23 +1680,16 @@ function doReveal(align, rarity) {
 
   FX.flashPulse(); $('flash').style.transition = 'none'; $('flash').style.opacity = .9;
   requestAnimationFrame(() => { $('flash').style.transition = 'opacity .8s'; $('flash').style.opacity = 0; });
-  // the card arrives face-down — the player detonates the reveal themselves
-  setFlip(true, true);
-  const realBackRarity = $('back-rarity').textContent;
-  $('back-rarity').textContent = '✦ tap to reveal ✦';
-  onFirstFlip = () => {
-    $('back-rarity').textContent = realBackRarity;
-    if (rarity === 4) FX.setCardEmit(() => document.getElementById('card-scene').getBoundingClientRect());
-    SFX.reveal(rarity);
-    FX.burst(rarity >= 3 ? 240 : rarity === 2 ? 120 : 60,
-      rarity === 4 ? ['#FFD700', '#FFA500', '#fff'] : [color, '#F0F8FF', p.glow], .5, .42, rarity >= 3 ? 1.6 : 1);
-    if (navigator.vibrate && rarity >= 3) try { navigator.vibrate(rarity === 4 ? [40, 60, 40, 60, 120] : [30, 40, 50]); } catch (e) {}
-    if (pendingRepair) { const n = pendingRepair; pendingRepair = 0; setTimeout(() => offerRepair(n), 1600); }
-  };
+  // answer face first — the flip is an invitation to meet your sigil
+  setFlip(false, true);
+  onFirstFlip = null;
   show('reveal');
-  SFX.tap();
-  // impatience insurance: the card flips itself if the player just stares
-  setTimeout(() => { if (onFirstFlip && currentScreen === 'reveal' && revealAutoFlip) revealAutoFlip(); }, 3200);
+  if (rarity === 4) FX.setCardEmit(() => document.getElementById('card-scene').getBoundingClientRect());
+  SFX.reveal(rarity);
+  FX.burst(rarity >= 3 ? 240 : rarity === 2 ? 120 : 60,
+    rarity === 4 ? ['#FFD700', '#FFA500', '#fff'] : [color, '#F0F8FF', p.glow], .5, .42, rarity >= 3 ? 1.6 : 1);
+  if (navigator.vibrate && rarity >= 3) try { navigator.vibrate(rarity === 4 ? [40, 60, 40, 60, 120] : [30, 40, 50]); } catch (e) {}
+  if (pendingRepair) { const n = pendingRepair; pendingRepair = 0; setTimeout(() => offerRepair(n), 2000); }
   busy = false;
 }
 
